@@ -294,16 +294,17 @@ Neu nop bang Pull Request, dat tieu de theo mau:
 [MSSV] - [Ho ten] - Bai tap tuan X
 ```
 
-### 10. Gợi ý cho giảng viên
+### 10. Lời khuyên dành cho sinh viên
 
-Để quản lý bài tập hiệu quả hơn, giảng viên nên:
-- quy định rõ cấu trúc thư mục nộp bài
-- thống nhất mẫu tiêu đề Pull Request
-- yêu cầu commit message rõ ràng
-- thêm file `.gitignore` để tránh sinh viên push file rác
-- cân nhắc dùng **GitHub Classroom** nếu số lượng sinh viên lớn
+Để việc nộp bài được thuận lợi và dễ chấm hơn, các em nên:
 
-Ví dụ `.gitignore` cơ bản:
+- đặt bài làm đúng thư mục theo hướng dẫn
+- viết tiêu đề Pull Request đúng mẫu quy định
+- ghi commit message rõ ràng, dễ hiểu
+- không đẩy lên các file không cần thiết như file `.exe`, thư mục `build/`, `bin/`, `obj/`
+- kiểm tra kỹ bài trước khi push lên GitHub
+
+**Ví dụ `.gitignore` cơ bản:**
 
 ```gitignore
 bin/
@@ -313,7 +314,6 @@ obj/
 *.out
 .vscode/
 .idea/
-```
 
 ---
 
