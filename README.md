@@ -119,5 +119,3 @@ make clean  # Xóa file đã build
 - Các hàm đặt tên theo phong cách **giáo trình** (HoanVi, ThemDau, XoaCuoi, ...)
 
 ---
-
-*Dự án được xây dựng từ giáo trình Cấu trúc dữ liệu và Giải thuật - CDCTTP.HCM 2025*
