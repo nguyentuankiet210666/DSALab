@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorting Visualizer — Chương 2 CTDL</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a12;--bg2:#111119;--bg3:#18181f;--bg4:#20202a;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#e8e8f0;--text2:#8888a8;--text3:#44445a;
+  --accent:#7c6ff7;--accent2:#a78bfa;
+  --green:#34d399;--amber:#fbbf24;--pink:#f472b6;--blue:#60a5fa;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:14px}
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* Header */
+header{display:flex;align-items:center;gap:8px;padding:10px 18px;background:var(--bg2);border-bottom:1px solid var(--border);flex-wrap:wrap;flex-shrink:0}
+.logo{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--accent2);margin-right:4px}
+.badge{font-size:10px;padding:3px 8px;background:rgba(124,111,247,0.15);color:var(--accent2);border:1px solid rgba(124,111,247,0.28);border-radius:4px;letter-spacing:.5px;text-transform:uppercase;margin-right:8px}
+.tab{font-family:'JetBrains Mono',monospace;font-size:12px;padding:5px 13px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;transition:all .12s}
+.tab:hover{background:var(--bg3);color:var(--text)}
+.tab.on{background:rgba(124,111,247,0.18);border-color:var(--accent);color:var(--accent2)}
+
+/* Input bar */
+.input-bar{display:flex;align-items:center;gap:8px;padding:8px 18px;background:var(--bg2);border-bottom:1px solid var(--border);flex-wrap:wrap;flex-shrink:0}
+.input-label{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);white-space:nowrap}
+.arr-input{
+  flex:1;min-width:200px;
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+  padding:6px 12px;background:var(--bg3);
+  border:1px solid var(--border2);border-radius:6px;
+  color:var(--text);outline:none;transition:border-color .12s;
+}
+.arr-input:focus{border-color:var(--accent)}
+.arr-input.err{border-color:#f87171}
+.err-msg{font-size:11px;color:#f87171;font-family:'JetBrains Mono',monospace}
+.ibtn{font-family:'JetBrains Mono',monospace;font-size:12px;padding:6px 14px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;transition:all .12s;white-space:nowrap}
+.ibtn:hover{background:var(--bg3);color:var(--text)}
+.ibtn.apply{background:rgba(124,111,247,.18);border-color:var(--accent);color:var(--accent2)}
+.ibtn.apply:hover{background:rgba(124,111,247,.28)}
+.ibtn.rand{background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.35);color:#34d399}
+.ibtn.rand:hover{background:rgba(52,211,153,.18)}
+.rand-group{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:4px 10px}
+.n-val{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent2);font-weight:500;min-width:24px;text-align:center}
+
+/* Chips row */
+.chips{display:flex;gap:4px;flex-wrap:wrap;padding:6px 18px;background:var(--bg2);border-bottom:1px solid var(--border);align-items:center;min-height:36px;flex-shrink:0}
+.chips-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);margin-right:4px;white-space:nowrap}
+.chip{font-family:'JetBrains Mono',monospace;font-size:11px;padding:3px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--text2);transition:all .1s}
+.chip.c-active{background:rgba(124,111,247,.2);border-color:var(--accent);color:var(--accent2)}
+.chip.c-compare{background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.4);color:var(--amber)}
+.chip.c-pivot{background:rgba(244,114,182,.12);border-color:rgba(244,114,182,.4);color:var(--pink)}
+.chip.c-sorted{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.4);color:var(--green)}
+.chip.c-min{background:rgba(96,165,250,.12);border-color:rgba(96,165,250,.4);color:var(--blue)}
+
+/* Main layout */
+main{display:flex;flex:1;overflow:hidden}
+.left{display:flex;flex-direction:column;flex:1;min-width:0;border-right:1px solid var(--border)}
+.right{width:340px;min-width:240px;display:flex;flex-direction:column;background:var(--bg2)}
+
+/* Visualizer */
+.vis{flex:1;display:flex;flex-direction:column;padding:14px 16px 8px;min-height:0;overflow:hidden}
+.bars-outer{flex:1;display:flex;align-items:flex-end;gap:2px;min-height:120px}
+.bc{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;justify-content:flex-end}
+.bar{width:100%;border-radius:2px 2px 0 0;transition:height .15s ease,background .1s ease;min-height:3px}
+.bval{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);text-align:center;line-height:1}
+.ptr-row{display:flex;height:14px;margin-top:3px}
+.ptr{flex:1;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;text-align:center;line-height:1.5}
+
+.statusbar{padding:7px 14px;background:var(--bg2);border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);min-height:32px;border-left:3px solid var(--accent);flex-shrink:0}
+.stats-row{display:flex;gap:14px;padding:6px 14px;background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0}
+.st{font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.st span{color:var(--text);font-weight:500}
+.ctrlbar{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--bg2);border-top:1px solid var(--border);flex-wrap:wrap;flex-shrink:0}
+.clabel{font-size:11px;color:var(--text3)}
+.cval{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text);font-weight:500;min-width:20px}
+input[type=range]{-webkit-appearance:none;height:3px;background:var(--bg4);border-radius:2px;outline:none;cursor:pointer;width:80px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 0 2px rgba(124,111,247,.25)}
+.btn{font-family:'JetBrains Mono',monospace;font-size:12px;padding:5px 12px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;transition:all .12s;white-space:nowrap}
+.btn:hover:not(:disabled){background:var(--bg3);color:var(--text)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.run{background:rgba(124,111,247,.18);border-color:var(--accent);color:var(--accent2)}
+.btn.stop{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.35);color:#f87171}
+
+/* Code panel */
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.code-title{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2)}
+.lang-badge{font-size:10px;padding:2px 8px;background:rgba(124,111,247,.15);color:var(--accent2);border-radius:4px;border:1px solid rgba(124,111,247,.25)}
+.code-body{flex:1;overflow-y:auto;padding:8px 0;scrollbar-width:thin;scrollbar-color:var(--bg4) transparent}
+.code-body::-webkit-scrollbar{width:4px}
+.code-body::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+pre{font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.7;padding:0 14px;white-space:pre}
+.ln{display:block;padding:0 6px;border-radius:3px;transition:background .1s;color:var(--text2)}
+.ln.hl{background:rgba(124,111,247,.22);color:#e0d8ff}
+.ln-num{color:var(--text3);user-select:none;margin-right:10px;min-width:18px;display:inline-block;text-align:right}
+.kw{color:#c792ea}.fn{color:#82aaff}.cm{color:#4a5568;font-style:italic}.num{color:#f78c6c}.op{color:#89ddff}.ty{color:#ffcb6b}
+
+
+.algo-desc{padding:8px 18px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace;min-height:32px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.algo-desc strong{color:var(--accent2);font-weight:500;margin-right:4px}
+.algo-desc .cx-pills{display:flex;gap:6px;margin-left:auto}
+.cx-pill{font-size:10px;padding:2px 8px;border-radius:4px;background:var(--bg3);border:1px solid var(--border);color:var(--text3)}
+.cx-pill span{color:var(--accent2);font-weight:500}
+
+.cx-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 12px;border-top:1px solid var(--border);flex-shrink:0}
+.cx{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 10px}
+.cx-k{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
+.cx-v{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent2);font-weight:500}
+
+/* Legend */
+.legend{display:flex;gap:10px;flex-wrap:wrap;padding:6px 14px;background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+@media(max-width:860px){
+  main{flex-direction:column}
+  .right{width:100%;height:260px;min-width:0;border-right:none;border-top:1px solid var(--border)}
+  header{padding:10px 12px}
+  .input-bar,.chips{padding:7px 12px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <span class="logo">SortViz</span>
+  <span class="badge">Chương 2</span>
+  <button class="tab on" onclick="selAlgo('selection',this)" title="Tìm phần tử nhỏ nhất từng lượt, đưa về đầu đoạn — O(N²)">Selection</button>
+  <button class="tab"    onclick="selAlgo('insertion',this)" title="Chèn từng phần tử vào đúng vị trí trong đoạn đã sắp — O(N²)">Insertion</button>
+  <button class="tab"    onclick="selAlgo('bubble',this)" title="Đổi chỗ cặp kề nhau sai thứ tự, phần tử lớn nổi về cuối — O(N²)">Bubble</button>
+  <button class="tab"    onclick="selAlgo('quick',this)" title="Chọn pivot, phân hoạch rồi đệ quy — O(N logN) trung bình">Quick</button>
+  <button class="tab"    onclick="selAlgo('heap',this)" title="Xây max-heap rồi lấy dần phần tử lớn nhất — O(N logN)">Heap</button>
+</header>
+
+<div class="input-bar">
+  <div class="rand-group">
+    <span class="input-label">N =</span>
+    <input type="number" id="nInput" min="2" max="60" value="16"
+      style="width:52px;font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 6px;background:var(--bg4);border:1px solid var(--border2);border-radius:5px;color:var(--accent2);text-align:center;outline:none"
+      oninput="onNInput(this.value)">
+    <button class="ibtn rand" onclick="doShuffle()">⇌ Random</button>
+  </div>
+  <span class="input-label" style="margin-left:4px">Nhập tay:</span>
+  <input class="arr-input" id="arrInput" type="text"
+    placeholder="vd: 64 25 12 22 11 90  (Enter để áp dụng)"
+    oninput="validateInput(this)">
+  <button class="ibtn apply" onclick="applyInput()">Áp dụng ↵</button>
+  <span class="err-msg" id="errMsg"></span>
+</div>
+
+<div class="chips" id="chipsRow">
+  <span class="chips-label">Mảng:</span>
+  <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">Chưa có dữ liệu</span>
+</div>
+
+
+<div class="algo-desc" id="algoDesc"></div>
+<main>
+  <div class="left">
+    <div class="vis">
+      <div class="bars-outer" id="barsWrap"></div>
+      <div class="ptr-row" id="ptrRow"></div>
+    </div>
+    <div class="statusbar" id="statusBar">Nhập mảng hoặc nhấn ⇌ Random, rồi nhấn ▶ Chạy.</div>
+    <div class="stats-row">
+      <div class="st">So sánh: <span id="sCmp">0</span></div>
+      <div class="st">Hoán vị: <span id="sSwp">0</span></div>
+      <div class="st">Bước: <span id="sStep">0</span></div>
+      <div class="st">Thời gian: <span id="sTime">0ms</span></div>
+    </div>
+    <div class="ctrlbar">
+      <span class="clabel">Tốc độ</span>
+      <input type="range" min="1" max="10" value="5" step="1" id="spSlider" oninput="document.getElementById('spVal').textContent=this.value">
+      <span class="cval" id="spVal">5</span>
+      <button class="btn run" id="runBtn" onclick="handleRun()">▶ Chạy</button>
+      <button class="btn stop" id="stopBtn" onclick="stopFlag=true" disabled>■ Dừng</button>
+      <button class="btn" onclick="doReset()">↺ Reset</button>
+    </div>
+    <div class="legend">
+      <div class="leg"><div class="leg-dot" style="background:#7c6ff7"></div>Đang xét</div>
+      <div class="leg"><div class="leg-dot" style="background:#fbbf24"></div>So sánh</div>
+      <div class="leg"><div class="leg-dot" style="background:#f472b6"></div>Pivot</div>
+      <div class="leg"><div class="leg-dot" style="background:#60a5fa"></div>Min</div>
+      <div class="leg"><div class="leg-dot" style="background:#34d399"></div>Đã sắp xong</div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="code-header">
+      <span class="code-title" id="codeTitle">selection_sort.cpp</span>
+      <span class="lang-badge">C++</span>
+    </div>
+    <div class="code-body" id="codeBody"></div>
+    <div class="cx-grid" id="cxGrid"></div>
+  </div>
+</main>
+
+</div>
+<script>
+const ALGOS={
+  selection:{file:'selection_sort.cpp',best:'O(N²)',avg:'O(N²)',worst:'O(N²)',mem:'O(1)',lines:[
+    {t:'<span class="kw">void</span> <span class="fn">SelectionSort</span>(<span class="ty">int</span> a[], <span class="ty">int</span> n) {',id:'head'},
+    {t:'  <span class="ty">int</span> vt;',id:''},
+    {t:'  <span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="num">0</span>; i < n<span class="op">-</span><span class="num">1</span>; i++) {',id:'outer'},
+    {t:'    vt <span class="op">=</span> i;',id:'setvt'},
+    {t:'    <span class="kw">for</span> (<span class="ty">int</span> j <span class="op">=</span> i<span class="op">+</span><span class="num">1</span>; j < n; j++) {',id:'inner'},
+    {t:'      <span class="kw">if</span> (a[j] < a[vt])',id:'cmp'},
+    {t:'        vt <span class="op">=</span> j;',id:'updatevt'},
+    {t:'    }',id:''},
+    {t:'    <span class="fn">HoanVi</span>(a[i], a[vt]);',id:'swap'},
+    {t:'  }',id:''},
+    {t:'}',id:''},
+    {t:'',id:''},
+    {t:'<span class="kw">void</span> <span class="fn">HoanVi</span>(<span class="ty">int</span> <span class="op">&</span>a, <span class="ty">int</span> <span class="op">&</span>b) {',id:''},
+    {t:'  <span class="ty">int</span> t <span class="op">=</span> a; a <span class="op">=</span> b; b <span class="op">=</span> t;',id:''},
+    {t:'}',id:''},
+  ]},
+  insertion:{file:'insertion_sort.cpp',best:'O(N)',avg:'O(N²)',worst:'O(N²)',mem:'O(1)',lines:[
+    {t:'<span class="kw">void</span> <span class="fn">InsertionSort</span>(<span class="ty">int</span> a[], <span class="ty">int</span> n) {',id:'head'},
+    {t:'  <span class="ty">int</span> pos, x;',id:''},
+    {t:'  <span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="num">1</span>; i < n; i++) {',id:'outer'},
+    {t:'    pos <span class="op">=</span> i;  x <span class="op">=</span> a[i];',id:'pick'},
+    {t:'    <span class="kw">while</span> (pos > <span class="num">0</span> <span class="op">&&</span>',id:'while'},
+    {t:'           a[pos<span class="op">-</span><span class="num">1</span>] > x) {',id:'cmp'},
+    {t:'      a[pos] <span class="op">=</span> a[pos<span class="op">-</span><span class="num">1</span>];',id:'shift'},
+    {t:'      pos<span class="op">--</span>;',id:''},
+    {t:'    }',id:''},
+    {t:'    a[pos] <span class="op">=</span> x;',id:'place'},
+    {t:'  }',id:''},
+    {t:'}',id:''},
+  ]},
+  bubble:{file:'bubble_sort.cpp',best:'O(N)',avg:'O(N²)',worst:'O(N²)',mem:'O(1)',lines:[
+    {t:'<span class="kw">void</span> <span class="fn">BubbleSort</span>(<span class="ty">int</span> a[], <span class="ty">int</span> n) {',id:'head'},
+    {t:'  <span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="num">0</span>; i < n<span class="op">-</span><span class="num">1</span>; i++)',id:'outer'},
+    {t:'    <span class="kw">for</span> (<span class="ty">int</span> j <span class="op">=</span> n<span class="op">-</span><span class="num">1</span>; j > i; j<span class="op">--</span>)',id:'inner'},
+    {t:'      <span class="kw">if</span> (a[j] < a[j<span class="op">-</span><span class="num">1</span>])',id:'cmp'},
+    {t:'        <span class="fn">HoanVi</span>(a[j], a[j<span class="op">-</span><span class="num">1</span>]);',id:'swap'},
+    {t:'}',id:''},
+  ]},
+  quick:{file:'quick_sort.cpp',best:'O(N logN)',avg:'O(N logN)',worst:'O(N²)',mem:'O(logN)',lines:[
+    {t:'<span class="kw">void</span> <span class="fn">QuickSort</span>(<span class="ty">int</span> a[], <span class="ty">int</span> l, <span class="ty">int</span> r) {',id:'head'},
+    {t:'  <span class="ty">int</span> i<span class="op">=</span>l, j<span class="op">=</span>r;',id:''},
+    {t:'  <span class="ty">int</span> x <span class="op">=</span> a[(l<span class="op">+</span>r)<span class="op">/</span><span class="num">2</span>];',id:'pivot'},
+    {t:'  <span class="kw">do</span> {',id:''},
+    {t:'    <span class="kw">while</span> (a[i] < x) i<span class="op">++</span>;',id:'left'},
+    {t:'    <span class="kw">while</span> (a[j] > x) j<span class="op">--</span>;',id:'right'},
+    {t:'    <span class="kw">if</span> (i <span class="op"><=</span> j) {',id:'cmp'},
+    {t:'      <span class="fn">HoanVi</span>(a[i], a[j]);',id:'swap'},
+    {t:'      i<span class="op">++</span>; j<span class="op">--</span>;',id:''},
+    {t:'    }',id:''},
+    {t:'  } <span class="kw">while</span> (i <span class="op"><=</span> j);',id:''},
+    {t:'  <span class="kw">if</span> (l < j) <span class="fn">QuickSort</span>(a, l, j);',id:'rec1'},
+    {t:'  <span class="kw">if</span> (i < r) <span class="fn">QuickSort</span>(a, i, r);',id:'rec2'},
+    {t:'}',id:''},
+  ]},
+  heap:{file:'heap_sort.cpp',best:'O(N logN)',avg:'O(N logN)',worst:'O(N logN)',mem:'O(1)',lines:[
+    {t:'<span class="kw">void</span> <span class="fn">Shift</span>(<span class="ty">int</span> a[], <span class="ty">int</span> l, <span class="ty">int</span> r) {',id:''},
+    {t:'  <span class="ty">int</span> i<span class="op">=</span>l, j<span class="op">=</span><span class="num">2</span><span class="op">*</span>i<span class="op">+</span><span class="num">1</span>, x<span class="op">=</span>a[i];',id:''},
+    {t:'  <span class="kw">while</span> (j <span class="op"><=</span> r) {',id:''},
+    {t:'    <span class="kw">if</span> (j<r <span class="op">&&</span> a[j]<a[j<span class="op">+</span><span class="num">1</span>]) j<span class="op">++</span>;',id:'cmp'},
+    {t:'    <span class="kw">if</span> (x <span class="op">>=</span> a[j]) <span class="kw">break</span>;',id:''},
+    {t:'    a[i]<span class="op">=</span>a[j]; i<span class="op">=</span>j; j<span class="op">=</span><span class="num">2</span><span class="op">*</span>i<span class="op">+</span><span class="num">1</span>;',id:'shift'},
+    {t:'  } a[i] <span class="op">=</span> x;',id:''},
+    {t:'}',id:''},
+    {t:'',id:''},
+    {t:'<span class="kw">void</span> <span class="fn">HeapSort</span>(<span class="ty">int</span> a[], <span class="ty">int</span> n) {',id:'head'},
+    {t:'  <span class="cm">// Giai đoạn 1: xây max-heap</span>',id:''},
+    {t:'  <span class="kw">for</span> (<span class="ty">int</span> k<span class="op">=</span>n<span class="op">/</span><span class="num">2</span><span class="op">-</span><span class="num">1</span>; k<span class="op">>=</span><span class="num">0</span>; k<span class="op">--</span>)',id:'build'},
+    {t:'    <span class="fn">Shift</span>(a, k, n<span class="op">-</span><span class="num">1</span>);',id:''},
+    {t:'  <span class="cm">// Giai đoạn 2: sắp xếp</span>',id:''},
+    {t:'  <span class="kw">for</span> (<span class="ty">int</span> r<span class="op">=</span>n<span class="op">-</span><span class="num">1</span>; r<span class="op">></span><span class="num">0</span>; r<span class="op">--</span>) {',id:'sort'},
+    {t:'    <span class="fn">HoanVi</span>(a[<span class="num">0</span>], a[r]);',id:'swap'},
+    {t:'    <span class="fn">Shift</span>(a, <span class="num">0</span>, r<span class="op">-</span><span class="num">1</span>);',id:''},
+    {t:'  }',id:''},
+    {t:'}',id:''},
+  ]},
+};
+
+let algo='selection', arr=[], origArr=[], n=16, running=false, stopFlag=false;
+let cmp=0, swp=0, step=0, colors={}, timerID=null;
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const getDelay = () => Math.max(8, 620 - parseInt(document.getElementById('spSlider').value) * 60);
+const rand = n => Array.from({length:n}, () => Math.floor(Math.random()*90)+5);
+
+function parseInput(str) {
+  const parts = str.trim().split(/[\s,;]+/).filter(s => s !== '');
+  if (!parts.length) return null;
+  const nums = parts.map(Number);
+  if (nums.some(isNaN) || nums.length > 60) return null;
+  return nums;
+}
+
+function validateInput(el) {
+  const v = parseInput(el.value);
+  const err = document.getElementById('errMsg');
+  if (!el.value.trim()) { el.classList.remove('err'); err.textContent = ''; return; }
+  if (!v) { el.classList.add('err'); err.textContent = 'Số không hợp lệ hoặc vượt quá 60 phần tử'; }
+  else { el.classList.remove('err'); err.textContent = ''; }
+}
+
+function applyInput() {
+  if (running) return;
+  const input = document.getElementById('arrInput');
+  const v = parseInput(input.value);
+  if (!v || v.length < 2) {
+    input.classList.add('err');
+    document.getElementById('errMsg').textContent = v ? 'Cần ít nhất 2 phần tử' : 'Dữ liệu không hợp lệ — dùng số, cách nhau bởi dấu phẩy hoặc khoảng trắng';
+    return;
+  }
+  input.classList.remove('err');
+  document.getElementById('errMsg').textContent = '';
+  origArr = [...v]; arr = [...v]; n = v.length;
+  colors = {}; resetStats(); renderBars(); renderChips(arr, {});
+  setStatus('Đã nhập ' + n + ' phần tử — Nhấn ▶ Chạy');
+}
+
+document.getElementById('arrInput').addEventListener('keydown', e => { if (e.key === 'Enter') applyInput(); });
+
+function onNInput(v) {
+  const val = parseInt(v);
+  if (!isNaN(val) && val >= 2 && val <= 60) n = val;
+}
+
+function doShuffle() {
+  if (running) return;
+  const ni = document.getElementById('nInput');
+  const val = parseInt(ni.value);
+  if (!isNaN(val) && val >= 2 && val <= 60) n = val;
+  const a = rand(n);
+  origArr = [...a]; arr = [...a]; n = a.length;
+  document.getElementById('arrInput').value = a.join(', ');
+  document.getElementById('arrInput').classList.remove('err');
+  document.getElementById('errMsg').textContent = '';
+  colors = {}; resetStats(); renderBars(); renderChips(arr, {});
+  setStatus('Mảng ngẫu nhiên ' + n + ' phần tử — Nhấn ▶ Chạy');
+}
+
+function doReset() {
+  stopFlag = true;
+  setTimeout(() => {
+    arr = [...origArr]; n = arr.length;
+    colors = {}; resetStats(); renderBars(); renderChips(arr, {});
+    setStatus('Đã reset về mảng gốc');
+  }, 80);
+}
+
+function selAlgo(key, el) {
+  if (running) return;
+  algo = key;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  renderCode(key);
+  if (origArr.length > 0) { arr = [...origArr]; n = arr.length; }
+  colors = {}; resetStats(); renderBars(); renderChips(arr, {});
+  setStatus(ALGOS[key].file + ' — Nhấn ▶ Chạy');
+  updateDesc(key);
+}
+
+function renderCode(key) {
+  const info = ALGOS[key];
+  document.getElementById('codeTitle').textContent = info.file;
+  const body = document.getElementById('codeBody'); body.innerHTML = '';
+  const pre = document.createElement('pre');
+  info.lines.forEach((l, i) => {
+    const span = document.createElement('span');
+    span.className = 'ln'; span.id = 'ln-' + i;
+    span.innerHTML = `<span class="ln-num">${String(i+1).padStart(2)}</span>${l.t}`;
+    pre.appendChild(span); pre.appendChild(document.createTextNode('\n'));
+  });
+  body.appendChild(pre);
+  document.getElementById('cxGrid').innerHTML =
+    ['Tốt nhất','Trung bình','Tệ nhất','Bộ nhớ'].map((k,i) =>
+      `<div class="cx"><div class="cx-k">${k}</div><div class="cx-v">${[info.best,info.avg,info.worst,info.mem][i]}</div></div>`
+    ).join('');
+}
+
+function hlLine(id) {
+  document.querySelectorAll('.ln').forEach(l => l.classList.remove('hl'));
+  ALGOS[algo].lines.forEach((l, i) => {
+    if (l.id === id) {
+      const el = document.getElementById('ln-' + i);
+      if (el) { el.classList.add('hl'); el.scrollIntoView({block:'nearest', behavior:'smooth'}); }
+    }
+  });
+}
+
+function renderChips(a, hl) {
+  const row = document.getElementById('chipsRow');
+  row.innerHTML = '<span class="chips-label">Mảng:</span>';
+  if (!a.length) { row.innerHTML += '<span style="font-size:11px;color:var(--text3);font-family:\'JetBrains Mono\',monospace">Chưa có dữ liệu</span>'; return; }
+  a.forEach((v, i) => {
+    const ch = document.createElement('span');
+    let cls = 'chip';
+    if (hl.active === i) cls = 'chip c-active';
+    else if (hl.compare === i) cls = 'chip c-compare';
+    else if (hl.pivot === i) cls = 'chip c-pivot';
+    else if (hl.min === i) cls = 'chip c-min';
+    else if (hl.sorted && hl.sorted.has(i)) cls = 'chip c-sorted';
+    ch.className = cls; ch.textContent = v;
+    row.appendChild(ch);
+  });
+}
+
+function resetStats() {
+  cmp=0; swp=0; step=0;
+  ['sCmp','sSwp','sStep'].forEach(id => document.getElementById(id).textContent = '0');
+  document.getElementById('sTime').textContent = '0ms';
+}
+function updStats() {
+  document.getElementById('sCmp').textContent = cmp;
+  document.getElementById('sSwp').textContent = swp;
+  document.getElementById('sStep').textContent = step;
+}
+function setStatus(msg) { document.getElementById('statusBar').textContent = msg; }
+
+function renderBars() {
+  const wrap = document.getElementById('barsWrap');
+  if (!arr.length) { wrap.innerHTML = ''; return; }
+  const maxH = wrap.clientHeight || 260, maxV = Math.max(...arr, 1);
+  wrap.innerHTML = '';
+  arr.forEach((v, i) => {
+    const col = document.createElement('div'); col.className = 'bc';
+    const bar = document.createElement('div'); bar.className = 'bar'; bar.id = 'b' + i;
+    bar.style.height = Math.max(3, Math.round(v/maxV*(maxH-20))) + 'px';
+    bar.style.background = colors[i] || '#2a2a3a';
+    col.appendChild(bar);
+    if (n <= 40) { const lbl = document.createElement('div'); lbl.className='bval'; lbl.textContent=v; col.appendChild(lbl); }
+    wrap.appendChild(col);
+  });
+}
+
+function renderPtrs(ptrs) {
+  const row = document.getElementById('ptrRow'); row.innerHTML = '';
+  arr.forEach((_, i) => {
+    const p = document.createElement('div'); p.className = 'ptr';
+    if (ptrs.i===i) { p.textContent='i'; p.style.color='#a78bfa'; }
+    else if (ptrs.j===i) { p.textContent='j'; p.style.color='#fbbf24'; }
+    else if (ptrs.pivot===i) { p.textContent='p'; p.style.color='#f472b6'; }
+    else if (ptrs.min===i) { p.textContent='↑'; p.style.color='#60a5fa'; }
+    row.appendChild(p);
+  });
+}
+
+function sc(i, c) { colors[i]=c; const el=document.getElementById('b'+i); if(el) el.style.background=c; }
+
+async function tick(ptrs, lineId, hl) {
+  step++; updStats(); renderPtrs(ptrs||{});
+  if (lineId) hlLine(lineId);
+  if (hl) renderChips(arr, hl);
+  await sleep(getDelay());
+}
+
+async function handleRun() {
+  if (running) return;
+  if (!arr.length) { setStatus('Nhập mảng trước!'); return; }
+  running=true; stopFlag=false;
+  document.getElementById('runBtn').disabled=true;
+  document.getElementById('stopBtn').disabled=false;
+  arr = [...origArr]; n = arr.length; cmp=0; swp=0; step=0; colors={};
+  renderBars();
+  const t0 = performance.now();
+  timerID = setInterval(() => {
+    if (!running) { clearInterval(timerID); return; }
+    document.getElementById('sTime').textContent = Math.round(performance.now()-t0) + 'ms';
+  }, 50);
+  if (algo==='selection') await doSelection();
+  else if (algo==='insertion') await doInsertion();
+  else if (algo==='bubble') await doBubble();
+  else if (algo==='quick') await doQuick();
+  else await doHeap();
+  clearInterval(timerID);
+  document.getElementById('sTime').textContent = Math.round(performance.now()-t0) + 'ms';
+  running=false;
+  document.getElementById('runBtn').disabled=false;
+  document.getElementById('stopBtn').disabled=true;
+  if (!stopFlag) {
+    const sortedAll = new Set(arr.map((_,i)=>i));
+    arr.forEach((_,i) => sc(i,'#34d399'));
+    renderBars(); renderChips(arr, {sorted: sortedAll});
+    document.querySelectorAll('.ln').forEach(l => l.classList.remove('hl'));
+    setStatus('✓ Hoàn thành! So sánh: ' + cmp + ' | Hoán vị: ' + swp);
+  }
+}
+
+async function doSelection() {
+  const sorted = new Set();
+  for (let i=0; i<n-1; i++) {
+    if (stopFlag) return;
+    let vt=i; sc(i,'#7c6ff7'); hlLine('outer');
+    setStatus('Lượt '+(i+1)+': tìm min từ vị trí '+i);
+    await tick({i, min:vt}, 'setvt', {active:i, min:vt, sorted});
+    for (let j=i+1; j<n; j++) {
+      if (stopFlag) return; cmp++;
+      sc(vt,'#60a5fa'); sc(j,'#fbbf24');
+      setStatus('a['+j+']='+arr[j]+' vs min a['+vt+']='+arr[vt]);
+      await tick({i,j, min:vt}, 'cmp', {active:j, min:vt, sorted});
+      if (arr[j]<arr[vt]) { if(vt!==i) sc(vt,'#2a2a3a'); vt=j; sc(vt,'#60a5fa'); hlLine('updatevt'); }
+      else { if(j!==vt) sc(j,'#2a2a3a'); }
+    }
+    if (vt!==i) { [arr[i],arr[vt]]=[arr[vt],arr[i]]; swp++; sc(vt,'#2a2a3a'); }
+    hlLine('swap'); await tick({i}, 'swap', {active:i, sorted});
+    sorted.add(i); sc(i,'#34d399'); sorted.forEach(k=>sc(k,'#34d399')); renderBars(); renderChips(arr,{sorted});
+  }
+  sorted.add(n-1);
+}
+
+async function doInsertion() {
+  const sorted = new Set([0]); sc(0,'#34d399');
+  for (let i=1; i<n; i++) {
+    if (stopFlag) return;
+    let pos=i, x=arr[i]; sc(i,'#7c6ff7'); hlLine('outer');
+    setStatus('Chèn a['+i+']='+x+' vào đúng vị trí trong [0..'+(i-1)+']');
+    await tick({i}, 'pick', {active:i, sorted});
+    while (pos>0 && arr[pos-1]>x) {
+      if (stopFlag) return; cmp++;
+      sc(pos-1,'#fbbf24');
+      setStatus('a['+(pos-1)+']='+arr[pos-1]+' > '+x+' → dịch phải');
+      await tick({i:pos-1, j:pos}, 'cmp', {active:pos, compare:pos-1, sorted});
+      arr[pos]=arr[pos-1]; swp++; sc(pos,'#7c6ff7'); sc(pos-1,'#2a2a3a'); hlLine('shift'); renderBars(); pos--;
+    }
+    cmp++; arr[pos]=x; hlLine('place');
+    for (let k=0; k<=i; k++) { sorted.add(k); sc(k,'#34d399'); }
+    renderBars(); renderChips(arr, {sorted});
+  }
+}
+
+async function doBubble() {
+  const sorted = new Set();
+  for (let i=0; i<n-1; i++) {
+    if (stopFlag) return; hlLine('outer');
+    for (let j=n-1; j>i; j--) {
+      if (stopFlag) return; cmp++;
+      sc(j,'#fbbf24'); sc(j-1,'#7c6ff7');
+      setStatus('a['+(j-1)+']='+arr[j-1]+' vs a['+j+']='+arr[j]);
+      await tick({i:j-1, j}, 'cmp', {active:j-1, compare:j, sorted});
+      if (arr[j]<arr[j-1]) { [arr[j],arr[j-1]]=[arr[j-1],arr[j]]; swp++; hlLine('swap'); renderBars(); }
+      sc(j, [...sorted].includes(j)?'#34d399':'#2a2a3a'); sc(j-1,'#2a2a3a');
+    }
+    sorted.add(n-1-i); sc(n-1-i,'#34d399'); renderChips(arr, {sorted});
+  }
+  sorted.add(0);
+}
+
+async function doQuick() {
+  async function partition(l, r) {
+    const pi = Math.floor((l+r)/2), pv = arr[pi];
+    sc(pi,'#f472b6'); hlLine('pivot');
+    setStatus('Partition ['+l+'..'+r+']: pivot='+pv+' tại ['+pi+']');
+    await tick({pivot:pi}, 'pivot', {pivot:pi});
+    let i=l, j=r;
+    while (i<=j) {
+      if (stopFlag) return l;
+      while (arr[i]<pv) { cmp++; hlLine('left'); i++; }
+      while (arr[j]>pv) { cmp++; hlLine('right'); j--; }
+      if (i<=j) {
+        sc(i,'#7c6ff7'); sc(j,'#fbbf24');
+        setStatus('a['+i+']='+arr[i]+' ↔ a['+j+']='+arr[j]);
+        await tick({i,j,pivot:pi}, 'swap', {active:i, compare:j, pivot:pi});
+        [arr[i],arr[j]]=[arr[j],arr[i]]; swp++; renderBars();
+        if(i!==pi) sc(i,'#2a2a3a'); if(j!==pi) sc(j,'#2a2a3a');
+        i++; j--;
+      }
+    }
+    sc(pi,'#2a2a3a'); return i;
+  }
+  async function qs(l, r) {
+    if (l>=r||stopFlag) { if(l===r) sc(l,'#34d399'); return; }
+    const p = await partition(l,r); await qs(l,p-1); await qs(p,r);
+    for (let k=l; k<=r; k++) sc(k,'#34d399');
+  }
+  await qs(0, n-1); renderBars(); renderChips(arr, {sorted: new Set(arr.map((_,i)=>i))});
+}
+
+async function doHeap() {
+  async function shift(l, r) {
+    let i=l, j=2*i+1, x=arr[i];
+    while (j<=r) {
+      if (stopFlag) return;
+      if (j<r && arr[j]<arr[j+1]) { cmp++; j++; }
+      cmp++; if (x>=arr[j]) break;
+      sc(i,'#7c6ff7'); sc(j,'#fbbf24'); hlLine('shift');
+      setStatus('Shift: a['+i+']='+arr[i]+' ↔ a['+j+']='+arr[j]);
+      await tick({i,j}, 'shift', {active:i, compare:j});
+      arr[i]=arr[j]; swp++; sc(i,'#2a2a3a'); sc(j,'#2a2a3a'); i=j; j=2*i+1; renderBars();
+    }
+    arr[i]=x; renderBars();
+  }
+  const sorted = new Set();
+  setStatus('Giai đoạn 1: xây max-heap...'); hlLine('build');
+  for (let k=Math.floor(n/2)-1; k>=0; k--) { if(stopFlag) return; await shift(k,n-1); }
+  setStatus('Giai đoạn 2: sắp xếp...'); hlLine('sort');
+  for (let r=n-1; r>0; r--) {
+    if (stopFlag) return;
+    sc(0,'#f472b6'); sc(r,'#7c6ff7');
+    setStatus('a[0]='+arr[0]+' → vị trí '+r);
+    hlLine('swap'); await tick({i:0, j:r}, 'swap', {pivot:0, active:r, sorted});
+    [arr[0],arr[r]]=[arr[r],arr[0]]; swp++;
+    sorted.add(r); sc(r,'#34d399'); sc(0,'#2a2a3a'); renderBars(); renderChips(arr, {sorted});
+    await shift(0, r-1);
+  }
+  sc(0,'#34d399');
+}
+
+
+const DESCS = {
+  selection: {text: 'Mỗi lượt tìm phần tử nhỏ nhất từ đoạn chưa sắp, đưa về đầu đoạn.', best:'O(N²)',avg:'O(N²)',worst:'O(N²)'},
+  insertion: {text: 'Lấy từng phần tử, dịch ngược về trái để chèn vào đúng vị trí trong đoạn đã sắp.', best:'O(N)',avg:'O(N²)',worst:'O(N²)'},
+  bubble:    {text: 'So sánh cặp kề nhau, hoán vị nếu sai thứ tự. Phần tử lớn nhất nổi dần về cuối.', best:'O(N)',avg:'O(N²)',worst:'O(N²)'},
+  quick:     {text: 'Chọn pivot ở giữa, phân hoạch mảng thành hai phần, đệ quy sắp từng phần.', best:'O(N logN)',avg:'O(N logN)',worst:'O(N²)'},
+  heap:      {text: 'Xây max-heap từ mảng, lần lượt lấy gốc heap (lớn nhất) đưa về cuối.', best:'O(N logN)',avg:'O(N logN)',worst:'O(N logN)'},
+};
+function updateDesc(key) {
+  const d = DESCS[key];
+  document.getElementById('algoDesc').innerHTML =
+    '<strong>' + ALGOS[key].file.replace('.cpp','') + '</strong>' + d.text +
+    '<div class="cx-pills">' +
+    '<div class="cx-pill">Best <span>' + d.best + '</span></div>' +
+    '<div class="cx-pill">Avg <span>' + d.avg + '</span></div>' +
+    '<div class="cx-pill">Worst <span>' + d.worst + '</span></div>' +
+    '</div>';
+}
+
+doShuffle();
+renderCode('selection');
+updateDesc('selection');
+window.addEventListener('resize', renderBars);
+</script>
+</body>
+</html>
